@@ -1,0 +1,24 @@
+{
+  "name": "hono-neon-drizzle-template",
+  "scripts": {
+    "dev": "wrangler dev src/index.tsx",
+    "deploy": "wrangler deploy --minify src/index.tsx",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate"
+  },
+  "dependencies": {
+    "@fiberplane/hono-otel": "^0.3.1",
+    "@neondatabase/serverless": "^0.9.3",
+    "dotenv": "^16.4.5",
+    "drizzle-orm": "^0.31.2",
+    "hono": "^4.5.0",
+    "resend": "^4.0.0"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20240403.0",
+    "@types/react": "^18.3.12",
+    "drizzle-kit": "^0.22.6",
+    "tsx": "^4.11.0",
+    "wrangler": "^3.47.0"
+  }
+}
