@@ -3,8 +3,8 @@ import { neon } from "@neondatabase/serverless";
 import { drizzle } from "drizzle-orm/neon-http";
 import { Hono } from "hono";
 import { Resend } from "resend";
+import { EmailTemplate } from "./EmailTemplate";
 import { runners } from "./db/schema";
-import { EmailTemplate } from "./email_template";
 
 type Bindings = {
   DATABASE_URL: string;
@@ -49,7 +49,7 @@ app.post("/api/marathon-fire-and-forget", async (c) => {
     address,
     distance,
     c.env.DATABASE_URL,
-  ).catch(console.error);
+  );
 
   sendMail(email, c.env.RESEND_API, firstName).catch(console.error);
 
@@ -66,7 +66,8 @@ app.post("/api/marathon-waituntil", async (c) => {
     address,
     distance,
     c.env.DATABASE_URL,
-  ).catch(console.error);
+  );
+
   c.executionCtx.waitUntil(sendMail(email, c.env.RESEND_API, firstName));
 
   return c.text("Thanks for registering for our Marathon", 201);
