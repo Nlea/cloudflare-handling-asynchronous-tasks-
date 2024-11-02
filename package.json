@@ -4,7 +4,8 @@
     "dev": "wrangler dev src/index.tsx",
     "deploy": "wrangler deploy --minify src/index.tsx",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "drizzle-kit migrate"
+    "db:migrate": "drizzle-kit migrate",
+    "format": "biome check --write"
   },
   "dependencies": {
     "@fiberplane/hono-otel": "^0.3.1",
@@ -15,6 +16,7 @@
     "resend": "^4.0.0"
   },
   "devDependencies": {
+    "@biomejs/biome": "^1.9.4",
     "@cloudflare/workers-types": "^4.20240403.0",
     "@types/react": "^18.3.12",
     "drizzle-kit": "^0.22.6",
