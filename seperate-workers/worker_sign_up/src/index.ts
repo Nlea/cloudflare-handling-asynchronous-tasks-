@@ -96,9 +96,12 @@ app.post("/api/marathon-producer-queue", async (c) => {
     email: email,
   };
 
+  const messageBody = JSON.stringify(messagePayload);
+
+
   //produce a message for the Queue
   console.log("Sending message to queue");
-  await c.env.REGISTRATION_QUEUE.send(messagePayload);
+  await c.env.REGISTRATION_QUEUE.send(messageBody);
 
   await insertData(
     firstName,
@@ -136,6 +139,7 @@ async function insertData(
     .execute();
 }
 
+
 export default instrument(app);
 
 //use this code, if you want to test the queue logic locally. At the moment Cloudflare Workers doesn't support two seperate local workers to communicate with one local queue.
@@ -143,9 +147,14 @@ export default instrument(app);
 
 // export default{
 //   fetch: app.fetch,
-//   async queue(batch: MessageBatch, env: Bindings) {
-//     for (const msg of batch.messages) {
-//     console.log(msg.body);
-//   }
+
+//   async queue(batch:MessageBatch, env: Bindings): Promise<void> {
+//          for (const msg of batch.messages) {
+//          console.log(msg.body);
+//          const { email, firstName } = JSON.parse(msg.body as string);
+//          console.log(email, firstName);
+//        }
+//      }
+
 // }
-// }
+

@@ -21,7 +21,7 @@ export class WorkerEmail extends WorkerEntrypoint {
     return new Response(null, { status: 404 });
   }
 
-  // I need the env variable here, but this approach isn't working
+  
   async send(email: string, firstName: string): Promise<Response> {
     const env = this.env as Env;
     const resend = new Resend(env.RESEND_API);
@@ -37,11 +37,10 @@ export class WorkerEmail extends WorkerEntrypoint {
     return Response.json(data);
   }
 
+  
   // Queue consumer
   async queue(batch: MessageBatch): Promise<void> {
     for (const message of batch.messages) {
-      await sleep(60000);
-
       console.log("Received", message.body);
       const { email, firstName } = JSON.parse(message.body as string);
       await this.send(email, firstName);
@@ -49,9 +48,6 @@ export class WorkerEmail extends WorkerEntrypoint {
   }
 }
 
-function sleep(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
 
 export default WorkerEmail;
 

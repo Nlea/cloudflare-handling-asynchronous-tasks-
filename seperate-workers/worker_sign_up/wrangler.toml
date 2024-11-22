@@ -13,9 +13,9 @@ services = [
 
 # uncomment if you want to test the queue logic locally and also make sure to uncomment the async queue in the index.ts
 # [[queues.consumers]]
-# queue = "registration-queue"
-# max_batch_size = 10 # optional: defaults to 10
-# max_batch_timeout = 5 # optional: defaults to 5 seconds
+#  queue = "registration-queue"
+#  max_batch_size = 10 # optional: defaults to 10
+#  max_batch_timeout = 5 # optional: defaults to 5 seconds
 
 # Workers Logs
 # Docs: https://developers.cloudflare.com/workers/observability/logs/workers-logs/
