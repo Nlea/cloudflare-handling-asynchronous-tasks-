@@ -1,8 +1,8 @@
 import { WorkerEntrypoint } from "cloudflare:workers";
+import { Context } from "hono";
 import React from "react";
 import { Resend } from "resend";
 import { EmailTemplate } from "./EmailTemplate";
-import { Context } from "hono";
 
 export interface Env {
   RESEND_API: string;
@@ -21,7 +21,6 @@ export class WorkerEmail extends WorkerEntrypoint {
     return new Response(null, { status: 404 });
   }
 
-  
   async send(email: string, firstName: string): Promise<Response> {
     const env = this.env as Env;
     const resend = new Resend(env.RESEND_API);
@@ -37,7 +36,6 @@ export class WorkerEmail extends WorkerEntrypoint {
     return Response.json(data);
   }
 
-  
   // Queue consumer
   async queue(batch: MessageBatch): Promise<void> {
     for (const message of batch.messages) {
@@ -48,8 +46,4 @@ export class WorkerEmail extends WorkerEntrypoint {
   }
 }
 
-
 export default WorkerEmail;
-
-
-

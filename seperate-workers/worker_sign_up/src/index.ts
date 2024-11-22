@@ -41,7 +41,6 @@ app.post("/api/marathon-sequential", async (c) => {
     c.env.DATABASE_URL,
   );
 
-
   //using rpc
   await c.env.WORKER_EMAIL.send(email, firstName);
 
@@ -98,7 +97,6 @@ app.post("/api/marathon-producer-queue", async (c) => {
 
   const messageBody = JSON.stringify(messagePayload);
 
-
   //produce a message for the Queue
   console.log("Sending message to queue");
   await c.env.REGISTRATION_QUEUE.send(messageBody);
@@ -139,7 +137,6 @@ async function insertData(
     .execute();
 }
 
-
 export default instrument(app);
 
 //use this code, if you want to test the queue logic locally. At the moment Cloudflare Workers doesn't support two seperate local workers to communicate with one local queue.
@@ -157,4 +154,3 @@ export default instrument(app);
 //      }
 
 // }
-
