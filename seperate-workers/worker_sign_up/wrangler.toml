@@ -1,0 +1,26 @@
+name = "worker-sign-up"
+compatibility_date = "2024-11-11"
+compatibility_flags = [ "nodejs_compat" ]
+
+services = [
+  { binding = "WORKER_EMAIL", service = "worker-email" }
+]
+
+[[queues.producers]]
+ queue = "registration-queue"
+ binding = "REGISTRATION_QUEUE"
+
+
+# uncomment if you want to test the queue logic locally and also make sure to uncomment the async queue in the index.ts
+# [[queues.consumers]]
+#  queue = "registration-queue"
+#  max_batch_size = 10 # optional: defaults to 10
+#  max_batch_timeout = 5 # optional: defaults to 5 seconds
+
+# Workers Logs
+# Docs: https://developers.cloudflare.com/workers/observability/logs/workers-logs/
+# Configuration: https://developers.cloudflare.com/workers/observability/logs/workers-logs/#enable-workers-logs
+[observability]
+enabled = true
+
+
