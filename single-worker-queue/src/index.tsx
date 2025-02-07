@@ -2,16 +2,10 @@ import { instrument } from "@fiberplane/hono-otel";
 import { neon } from "@neondatabase/serverless";
 import { drizzle } from "drizzle-orm/neon-http";
 import { Hono } from "hono";
-import { Resend } from "resend";
-import { SignupTemplate, NewsletterTemplate } from "./EmailTemplate";
 import { runners } from "./db/schema";
 import { MessageBatch } from "@cloudflare/workers-types";
-
-type Bindings = {
-  DATABASE_URL: string;
-  RESEND_API: string;
-  NEWSLETTER_QUEUE: Queue;
-};
+import { sendSignUpMail, sendNewsletterMail } from "./services/email";
+import { Distance, Bindings, RunnerData } from "./types";
 
 const app = new Hono<{ Bindings: Bindings }>();
 
@@ -19,14 +13,8 @@ app.get("/", (c) => {
   return c.text("Hello Hono!");
 });
 
-enum Distance {
-  TEN = "10",
-  HALF = "half",
-  FULL = "full",
-}
-
 app.post("/api/marathon-sign-up", async (c) => {
-  const { firstName, lastName, email, address, distance } = await c.req.json();
+  const { firstName, lastName, email, address, distance } = await c.req.json<RunnerData>();
 
   await insertData(
     firstName,
@@ -37,7 +25,7 @@ app.post("/api/marathon-sign-up", async (c) => {
     c.env.DATABASE_URL,
   );
 
-  c.executionCtx.waitUntil(sendMail(email, c.env.RESEND_API, firstName));
+  c.executionCtx.waitUntil(sendSignUpMail(email, c.env.RESEND_API, firstName));
 
   return c.text("Thanks for registering for our Marathon", 201);
 });
@@ -64,8 +52,7 @@ app.post("/api/send-newsletter", async (c) => {
         email: user.email,
         firstName: user.firstName,
         newsletterText,
-        subject,
-        type: 'newsletter'
+        subject
       });
     } catch (error) {
       console.error(`Failed to send newsletter to ${user.email}:`, error);
@@ -77,40 +64,6 @@ app.post("/api/send-newsletter", async (c) => {
     status: "success" 
   });
 });
-
-async function sendMail(email: string, apikey: string, firstName: string) {
-  const resend = new Resend(apikey);
-  const { error } = await resend.emails.send({
-    from: "Marathon Updates <community@updates.fp.dev>",
-    to: [email],
-    subject: "Your signed up for the marathon!",
-    react: <SignupTemplate firstName={firstName} />,
-  });
-
-  if (error) {
-    console.error("Error sending email", error);
-  }
-}
-
-async function sendNewsletterMail(
-  email: string, 
-  apikey: string, 
-  firstName: string, 
-  newsletterText: string,
-  subject: string
-) {
-  const resend = new Resend(apikey);
-  const { error } = await resend.emails.send({
-    from: "Marathon Updates <community@updates.fp.dev>",
-    to: [email],
-    subject: subject,
-    react: <NewsletterTemplate firstName={firstName} newsletterText={newsletterText} />,
-  });
-
-  if (error) {
-    console.error("Error sending email", error);
-  }
-}
 
 async function insertData(
   firstName: string,
@@ -139,21 +92,23 @@ async function insertData(
 export default {
   fetch: instrument(app).fetch,
   async queue(batch: MessageBatch<any>, env: Bindings): Promise<void> {
-    console.log(`Processing batch of ${batch.messages.length} messages`);
-    for (const message of batch.messages) {
-      const { email, firstName, type, newsletterText, subject } = message.body;
-      try {
-        if (type === 'newsletter') {
-          await sendNewsletterMail(email, env.RESEND_API, firstName, newsletterText, subject);
-        } else {
-          await sendMail(email, env.RESEND_API, firstName);
-        }
-        message.ack();
-        console.log(`Successfully sent ${type || 'signup'} email to ${firstName} (${email})`);
-      } catch (error) {
-        console.error(`Failed to send email to ${email}:`, error);
-        message.retry();
-      }
+  console.log(`Processing batch of ${batch.messages.length} messages`);
+  for (const message of batch.messages) {
+    const { email, firstName, newsletterText, subject } = message.body;
+    try {
+      await sendNewsletterMail(
+        email,
+        env.RESEND_API,
+        firstName,
+        newsletterText,
+        subject
+      );
+      message.ack();
+      console.log(`Successfully sent newsletter email to ${firstName} (${email})`);
+    } catch (error) {
+      console.error(`Failed to send email to ${email}:`, error);
+      message.retry();
     }
   }
+}
 };
