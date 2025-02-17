@@ -31,7 +31,17 @@ enabled = true
  queue = "newsletter-queue"
  binding = "NEWSLETTER_QUEUE"
 
+ [[queues.producers]]
+queue = "sign-up-queue"
+binding = "SIGN_UP_QUEUE"
+
+
 [[queues.consumers]]
 queue = "newsletter-queue"
 max_batch_size = 3
+max_batch_timeout = 30
+
+[[queues.consumers]]
+queue = "sign-up-queue"
+max_batch_size = 1
 max_batch_timeout = 30

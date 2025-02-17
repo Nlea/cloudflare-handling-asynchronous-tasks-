@@ -5,7 +5,7 @@ import { Hono } from "hono";
 import { runners } from "./db/schema";
 import { MessageBatch } from "@cloudflare/workers-types";
 import { sendSignUpMail, sendNewsletterMail } from "./services/email";
-import { Distance, Bindings, RunnerData } from "./types";
+import { Distance, Bindings, RunnerData, NewsletterMessage } from "./types";
 
 const app = new Hono<{ Bindings: Bindings }>();
 
@@ -25,7 +25,10 @@ app.post("/api/marathon-sign-up", async (c) => {
     c.env.DATABASE_URL,
   );
 
-  c.executionCtx.waitUntil(sendSignUpMail(email, c.env.RESEND_API, firstName));
+  c.executionCtx.waitUntil(c.env.SIGN_UP_QUEUE.send({
+    email,
+    firstName,
+  }));
 
   return c.text("Thanks for registering for our Marathon", 201);
 });
@@ -91,24 +94,37 @@ async function insertData(
 
 export default {
   fetch: instrument(app).fetch,
-  async queue(batch: MessageBatch<any>, env: Bindings): Promise<void> {
-  console.log(`Processing batch of ${batch.messages.length} messages`);
-  for (const message of batch.messages) {
-    const { email, firstName, newsletterText, subject } = message.body;
-    try {
-      await sendNewsletterMail(
-        email,
-        env.RESEND_API,
-        firstName,
-        newsletterText,
-        subject
-      );
-      message.ack();
-      console.log(`Successfully sent newsletter email to ${firstName} (${email})`);
-    } catch (error) {
-      console.error(`Failed to send email to ${email}:`, error);
-      message.retry();
-    }
+  async queue(batch: MessageBatch<NewsletterMessage | RunnerData>, env: Bindings) {
+    batch.messages.forEach(async (message) => {
+      switch (batch.queue) {
+        case 'sign-up-queue':
+          console.log(`Sign-up queue`);
+          const runnerData = message.body as RunnerData;
+          try {
+            await sendSignUpMail(runnerData.email, env.RESEND_API, runnerData.firstName);
+            message.ack();
+          }catch(error){
+            console.error(`Failed to process message:`, error);
+          }
+          break;
+        
+        case 'newsletter-queue':
+          console.log(`Newsletter queue`);
+          const newsletterData = message.body as NewsletterMessage;
+          try {
+            await sendNewsletterMail(
+              newsletterData.email,
+              env.RESEND_API,
+              newsletterData.firstName,
+              newsletterData.newsletterText,
+              newsletterData.subject
+            );
+            message.ack();
+          } catch (error) {
+            console.error(`Failed to process newsletter message:`, error);
+          }
+          break;
+      }
+    });
   }
-}
 };
