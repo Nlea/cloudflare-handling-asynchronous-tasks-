@@ -92,37 +92,45 @@ async function insertData(
     .execute();
 }
 
+async function handleSignUpMessage(message: Message<RunnerData>, env: Bindings) {
+  console.log(`Sign-up queue`);
+  const runnerData = message.body;
+  try {
+    await sendSignUpMail(runnerData.email, env.RESEND_API, runnerData.firstName);
+    message.ack();
+  } catch(error) {
+    console.error(`Failed to process message:`, error);
+  }
+}
+
+async function handleNewsletterMessage(message: Message<NewsletterMessage>, env: Bindings) {
+  console.log(`Newsletter queue`);
+  const newsletterData = message.body;
+  try {
+    await sendNewsletterMail(
+      newsletterData.email,
+      env.RESEND_API,
+      newsletterData.firstName,
+      newsletterData.newsletterText,
+      newsletterData.subject
+    );
+    message.ack();
+  } catch (error) {
+    console.error(`Failed to process newsletter message:`, error);
+  }
+}
+
 export default {
   fetch: instrument(app).fetch,
   async queue(batch: MessageBatch<NewsletterMessage | RunnerData>, env: Bindings) {
     batch.messages.forEach(async (message) => {
       switch (batch.queue) {
         case 'sign-up-queue':
-          console.log(`Sign-up queue`);
-          const runnerData = message.body as RunnerData;
-          try {
-            await sendSignUpMail(runnerData.email, env.RESEND_API, runnerData.firstName);
-            message.ack();
-          }catch(error){
-            console.error(`Failed to process message:`, error);
-          }
+          await handleSignUpMessage(message as Message<RunnerData>, env);
           break;
         
         case 'newsletter-queue':
-          console.log(`Newsletter queue`);
-          const newsletterData = message.body as NewsletterMessage;
-          try {
-            await sendNewsletterMail(
-              newsletterData.email,
-              env.RESEND_API,
-              newsletterData.firstName,
-              newsletterData.newsletterText,
-              newsletterData.subject
-            );
-            message.ack();
-          } catch (error) {
-            console.error(`Failed to process newsletter message:`, error);
-          }
+          await handleNewsletterMessage(message as Message<NewsletterMessage>, env);
           break;
       }
     });
